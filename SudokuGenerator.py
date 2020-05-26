@@ -50,8 +50,6 @@ def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disal
 	#we try each number from 1-9 in random order and use the first one that is valid
 	for i in range(0,9):
 
-		##print(i)
-
 		#dont try filling it with the disallowed value
 		if recursionDepth==cellWhereValIsDisallowed and disallowedValue==numberOrderGrid[xPos][yPos][i]:
 			continue
@@ -127,25 +125,19 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 
 	for i in gridSpaceOrder:
 		
-		#print("try to remove space="+str(floor(i%9))+" "+str(floor(i/9))+" "+str(i))
 		currentGridValue=int(sudokuGrid[floor(i%9)][floor(i/9)])
 
 		sudokuGrid[floor(i%9)][floor(i/9)]=0
 
-		#print("try to complete puzzle disallowing "+str(currentGridValue)+" in this spot")
-
-		#print(sudokuGrid)
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
 
 		notUnique=sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)[0]
-		#print(sudokuGrid)
+
 		if notUnique:
-			#print("no longer unique")
+
 			sudokuGrid[floor(i%9)][floor(i/9)]=currentGridValue
 			continue
-		#print("no solution exists")
-		#print("deleting "+str(i))	
-		#print(sudokuGrid)
+
 		return createPuzzle(sudokuGrid,sumOfFilledSquares-1,numberOrder)
 
 	return sudokuGrid
