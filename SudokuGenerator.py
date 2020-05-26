@@ -1,6 +1,7 @@
 import numpy
 import random
 import copy
+import time
 from math import floor
 
 def randomiseNumberOrder():
@@ -14,18 +15,18 @@ def randomiseNumberOrder():
 				numbersToSort.pop(index)
 	return numberOrderGrid
 
-def generateCompletedGrid(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
+def createSolution():
+	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
+
+def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
 	xPos=recursionDepth%9
 	yPos=floor(recursionDepth/9)
 
-	##print(recursionDepth)
-	##print(xPos)
-	##print(yPos)
 
 	if sudokuGrid[xPos][yPos]!=0 and recursionDepth==80:
 		return [True,sudokuGrid]
 	elif sudokuGrid[xPos][yPos]!=0 and recursionDepth<80:
-		return generateCompletedGrid(sudokuGrid,recursionDepth+1,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed)
+		return sequentialBacktrackingMethod(sudokuGrid,recursionDepth+1,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed)
 	
 
 	#TODO tidy up this block of if elses
@@ -86,8 +87,8 @@ def generateCompletedGrid(sudokuGrid,recursionDepth,numberOrderGrid,disallowedVa
 		if recursionDepth==80:
 			return [True,sudokuGrid]
 		#go down to next level to generate next cell
-		recurse=generateCompletedGrid(sudokuGrid,recursionDepth+1,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed)
-		#if its true then generateCompletedGrid has returned a complete grid so we return to the next level up
+		recurse=sequentialBacktrackingMethod(sudokuGrid,recursionDepth+1,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed)
+		#if its true then sequentialBacktrackingMethod has returned a complete grid so we return to the next level up
 		if recurse[0]==True:
 			return recurse
 		#otherwise, it was not able to fill in the next cell, and so this cell created an impossible to complete grid,
@@ -99,9 +100,13 @@ def generateCompletedGrid(sudokuGrid,recursionDepth,numberOrderGrid,disallowedVa
 	#if we can not fill the cell with any number, we return false in order to indicate we must change the previous cell
 	return [False,sudokuGrid]
 
-def createPuzzle(sudukoGrid,sumOfFilledSquares):
+def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 
 	print("current filled spaces="+str(sumOfFilledSquares))
+
+	if sumOfFilledSquares<30:
+		return sudokuGrid
+
 
 	gridSpaces=numpy.zeros(81)
 
@@ -118,7 +123,7 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares):
 
 	if sumOfFilledSquares==81:
 		sudokuGrid[floor(gridSpaceOrder[0]%9)][floor(gridSpaceOrder[0]/9)]=0
-		return createPuzzle(sudokuGrid,sumOfFilledSquares-1)
+		return createPuzzle(sudokuGrid,sumOfFilledSquares-1,numberOrder)
 
 	for i in gridSpaceOrder:
 		
@@ -131,7 +136,8 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares):
 
 		#print(sudokuGrid)
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
-		notUnique=generateCompletedGrid(sudokuGridCopy,0,randomiseNumberOrder(),currentGridValue,i)[0]
+
+		notUnique=sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)[0]
 		#print(sudokuGrid)
 		if notUnique:
 			#print("no longer unique")
@@ -140,7 +146,7 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares):
 		#print("no solution exists")
 		#print("deleting "+str(i))	
 		#print(sudokuGrid)
-		return createPuzzle(sudokuGrid,sumOfFilledSquares-1)
+		return createPuzzle(sudokuGrid,sumOfFilledSquares-1,numberOrder)
 
 	return sudokuGrid
 
@@ -149,11 +155,17 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares):
 boxIndex=[[0,2],[3,5],[6,8]]
 
 sudokuGrid=numpy.zeros([9,9])
-for i in range(0,100):
-	solution=generateCompletedGrid(sudokuGrid,0,randomiseNumberOrder(),-1,-1)[1]
+for i in range(0,1):
+	solution=createSolution()[1]
+
 	print(solution)
-	puzzle=createPuzzle(solution,81)
-	f=open("puzzle"+str(i)+".txt","w")
+
+	start=time.time()
+	puzzle=createPuzzle(solution,81,randomiseNumberOrder())
+	end=time.time()
+	print(end-start)
+
+	f=open("puzzles/puzzle"+str(i)+".txt","w")
 	for j in range(0,len(puzzle)):
 		for k in puzzle[j]:
 			f.write(str(int(k))+",")
