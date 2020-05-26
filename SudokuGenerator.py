@@ -18,6 +18,9 @@ def randomiseNumberOrder():
 def createSolution():
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
+def searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,i):
+	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)
+
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
 	xPos=recursionDepth%9
 	yPos=floor(recursionDepth/9)
@@ -44,9 +47,6 @@ def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disal
 	else:
 		boxY=2
 
-    
-	
-		
 	#we try each number from 1-9 in random order and use the first one that is valid
 	for i in range(0,9):
 
@@ -123,15 +123,15 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 		sudokuGrid[floor(gridSpaceOrder[0]%9)][floor(gridSpaceOrder[0]/9)]=0
 		return createPuzzle(sudokuGrid,sumOfFilledSquares-1,numberOrder)
 
-	for i in gridSpaceOrder:
+	for currentGridSpace in gridSpaceOrder:
 		
-		currentGridValue=int(sudokuGrid[floor(i%9)][floor(i/9)])
+		currentGridValue=int(sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)])
 
-		sudokuGrid[floor(i%9)][floor(i/9)]=0
+		sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
 
-		notUnique=sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)[0]
+		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace)[0]
 
 		if notUnique:
 
