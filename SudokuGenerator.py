@@ -1,5 +1,6 @@
 import numpy
 import random
+import threading
 import copy
 import time
 from math import floor
@@ -19,7 +20,7 @@ def randomiseNumberOrder():
 # Each technique type is organised according the the classifications
 # used in the paper 'A Scale to Measure the Difficulty of Sudoku Puzzles'
 # by José Silva Coelho
-def traditionalSearch(sudokuGridCopy,maxTechniqueDifficulty):
+def traditionalSearch(sudokuGridCopy,maxTechniqueDifficulty,disallowedValue,cellWhereValIsDisallowed):
 	
 	#green technique
 
@@ -28,18 +29,25 @@ def traditionalSearch(sudokuGridCopy,maxTechniqueDifficulty):
 	flag=True
 
 	while flag:
-		#try:
+		try:
+			#print("currentGridState:")
+			#print(sudokuGridCopy)
 			for digit in range(1,10):
+				
+				#print("digit="+str(digit))
+
 				mentalMarkGrid=numpy.zeros([9,9])
 				fillMentalMarkGrid(sudokuGridCopy,mentalMarkGrid,digit)
-				cellsFilledFlag=False
-				fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag)
+				#print("mentalMarkGrid:")
+				#print(mentalMarkGrid)
+				cellsFilledFlag=fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,disallowedValue,cellWhereValIsDisallowed)
 				if cellsFilledFlag:
-					print(sudokuGridCopy)
+					#print("cells filled")
 					raise Exception("break")
-				flag=False
-		#except:
-		#	continue
+			#print("nothing to fill")
+			flag=False
+		except:
+			continue
 
 def fillMentalMarkGrid(sudokuGridCopy,mentalMarkGrid,digit):
 
@@ -53,7 +61,9 @@ def fillMentalMarkGrid(sudokuGridCopy,mentalMarkGrid,digit):
 
 #fill all lone empty cells (cells that are the only cell in their
 #row, column, or subgrid that are not mentally marked
-def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag):
+def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,disallowedValue,cellWhereValIsDisallowed):
+
+	cellsFilledFlag=False
 
 	#check rows
 	for i in range(0,9):
@@ -64,7 +74,8 @@ def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag):
 				if mentalMarkGrid[i][j]==0:
 					index=j
 					break
-			sudokuGridCopy[i][index]=digit
+			if not(digit==disallowedValue and cellWhereValIsDisallowed==(i*9+j)):
+				sudokuGridCopy[i][index]=digit
 	
 	#columns
 	for i in range(0,9):
@@ -78,10 +89,11 @@ def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag):
 				if mentalMarkGrid[j][i]==0:
 					index=j
 					break
-			sudokuGridCopy[index][i]=digit
+			if not(digit==disallowedValue and cellWhereValIsDisallowed==(i*9+j)):
+				sudokuGridCopy[index][i]=digit
 
 	#boxes TODO
-
+	return cellsFilledFlag
 
 #mark the row column and subgrid of (xPos,yPos) in the mentalMarkGrid
 def markRowColumnSubgrid(xPos,yPos,mentalMarkGrid):
@@ -95,16 +107,8 @@ def markRowColumnSubgrid(xPos,yPos,mentalMarkGrid):
 	subgridIndex=[[0,2],[3,5],[6,8]]
 	subgridX=0
 	subgridY=0
-	getSubgrid(xPos,yPos,subgridX,subgridY)
+	#getSubgrid(xPos,yPos,subgridX,subgridY)
 
-	#mark subgrid
-	for i in range(subgridIndex[subgridX][0],subgridIndex[subgridX][1]+1):
-		for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
-			mentalMarkGrid[i][j]=1
-
-
-
-def getSubgrid(xPos,yPos,subgridX,subgridY):
 	if xPos<3:
 		subgridX=0
 	elif xPos<6:
@@ -119,12 +123,22 @@ def getSubgrid(xPos,yPos,subgridX,subgridY):
 	else:
 		subgridY=2
 
+	#mark subgrid
+	for i in range(subgridIndex[subgridX][0],subgridIndex[subgridX][1]+1):
+		for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
+			mentalMarkGrid[i][j]=1
+
+
+
+#def getSubgrid(xPos,yPos,subgridX,subgridY):
+	
+
 def createSolution():
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
-def searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,i):
-	traditionalSearch(sudokuGridCopy,0)
-	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)
+def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed):
+	#traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
+	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,disallowedValue,cellWhereValIsDisallowed)
 
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
 	xPos=recursionDepth%9
@@ -232,16 +246,17 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 		
 		currentGridValue=int(sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)])
 
-		sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
-
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
+
+		sudokuGridCopy[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
 		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace)[0]
 
 		if notUnique:
 
-			sudokuGrid[floor(i%9)][floor(i/9)]=currentGridValue
 			continue
+
+		sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
 		return createPuzzle(sudokuGrid,sumOfFilledSquares-1,numberOrder)
 
@@ -250,22 +265,24 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 	
 
 boxIndex=[[0,2],[3,5],[6,8]]
-
-
-for i in range(0,100):
+max=50
+totalTime=0
+for i in range(0,max):
 	sudokuGrid=numpy.zeros([9,9])
 	solution=createSolution()[1]
-
+	
 	print(solution)
 
 	start=time.time()
 	puzzle=createPuzzle(solution,81,randomiseNumberOrder())
 	end=time.time()
-	print(end-start)
-
+	timeTaken=end-start
+	totalTime+=timeTaken
 	f=open("puzzles/puzzle"+str(i)+".txt","w")
 	for j in range(0,len(puzzle)):
 		for k in puzzle[j]:
 			f.write(str(int(k))+",")
 		f.write("\n")
 	f.close()
+
+print(totalTime/max)
