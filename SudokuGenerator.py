@@ -15,10 +15,115 @@ def randomiseNumberOrder():
 				numbersToSort.pop(index)
 	return numberOrderGrid
 
+#search for solutions using traditional 'human viable' techniques.
+# Each technique type is organised according the the classifications
+# used in the paper 'A Scale to Measure the Difficulty of Sudoku Puzzles'
+# by José Silva Coelho
+def traditionalSearch(sudokuGridCopy,maxTechniqueDifficulty):
+	
+	#green technique
+
+	#grid of 'mentally marked' cells as in Coelho's paper. They are marked
+	#when set to 1
+	flag=True
+
+	while flag:
+		#try:
+			for digit in range(1,10):
+				mentalMarkGrid=numpy.zeros([9,9])
+				fillMentalMarkGrid(sudokuGridCopy,mentalMarkGrid,digit)
+				cellsFilledFlag=False
+				fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag)
+				if cellsFilledFlag:
+					print(sudokuGridCopy)
+					raise Exception("break")
+				flag=False
+		#except:
+		#	continue
+
+def fillMentalMarkGrid(sudokuGridCopy,mentalMarkGrid,digit):
+
+	for xPos in range(0,9):
+		for yPos in range(0,9):
+			if sudokuGridCopy[xPos][yPos]==digit:
+				markRowColumnSubgrid(xPos,yPos,mentalMarkGrid)
+			#we also mark all filled cells
+			if sudokuGridCopy[xPos][yPos]!=0:
+				mentalMarkGrid[xPos][yPos]=1
+
+#fill all lone empty cells (cells that are the only cell in their
+#row, column, or subgrid that are not mentally marked
+def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,cellsFilledFlag):
+
+	#check rows
+	for i in range(0,9):
+		count=sum(mentalMarkGrid[i])
+		if count==8:
+			cellsFilledFlag=True
+			for j in range(0,9):
+				if mentalMarkGrid[i][j]==0:
+					index=j
+					break
+			sudokuGridCopy[i][index]=digit
+	
+	#columns
+	for i in range(0,9):
+		count=0
+		for j in range(0,9):
+			if mentalMarkGrid[j][i]==1:
+				count+=1
+		if count==8:
+			cellsFilledFlag=True
+			for j in range(0,9):
+				if mentalMarkGrid[j][i]==0:
+					index=j
+					break
+			sudokuGridCopy[index][i]=digit
+
+	#boxes TODO
+
+
+#mark the row column and subgrid of (xPos,yPos) in the mentalMarkGrid
+def markRowColumnSubgrid(xPos,yPos,mentalMarkGrid):
+
+	#mark row and column
+	for i in range(0,9):
+		mentalMarkGrid[xPos][i]=1
+		mentalMarkGrid[i][yPos]=1
+
+	#get indices of sub grid
+	subgridIndex=[[0,2],[3,5],[6,8]]
+	subgridX=0
+	subgridY=0
+	getSubgrid(xPos,yPos,subgridX,subgridY)
+
+	#mark subgrid
+	for i in range(subgridIndex[subgridX][0],subgridIndex[subgridX][1]+1):
+		for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
+			mentalMarkGrid[i][j]=1
+
+
+
+def getSubgrid(xPos,yPos,subgridX,subgridY):
+	if xPos<3:
+		subgridX=0
+	elif xPos<6:
+		subgridX=1
+	else:
+		subgridX=2
+
+	if yPos<3:
+		subgridY=0
+	elif yPos<6:
+		subgridY=1
+	else:
+		subgridY=2
+
 def createSolution():
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
 def searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,i):
+	traditionalSearch(sudokuGridCopy,0)
 	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,currentGridValue,i)
 
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
@@ -147,7 +252,7 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 boxIndex=[[0,2],[3,5],[6,8]]
 
 sudokuGrid=numpy.zeros([9,9])
-for i in range(0,1):
+for i in range(0,100):
 	solution=createSolution()[1]
 
 	print(solution)
