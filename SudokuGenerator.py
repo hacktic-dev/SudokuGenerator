@@ -1,6 +1,6 @@
 import numpy
 import random
-import threading
+from multiprocessing.pool import ThreadPool as Pool
 import copy
 import time
 from math import floor
@@ -134,6 +134,7 @@ def markRowColumnSubgrid(xPos,yPos,mentalMarkGrid):
 	
 
 def createSolution():
+	sudokuGrid=numpy.zeros([9,9])
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
 def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed):
@@ -217,7 +218,7 @@ def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disal
 	#if we can not fill the cell with any number, we return false in order to indicate we must change the previous cell
 	return [False,sudokuGrid]
 
-def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
+def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 	print("current filled spaces="+str(sumOfFilledSquares))
 
@@ -264,25 +265,34 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 
 	
 
+def createAndSavePuzzles(numberOfPuzzles,threadNo):
+	totalTime=0
+	for i in range(0,numberOfPuzzles):
+		solution=createSolution()[1]
+	
+		print(solution)
+
+		start=time.time()
+		puzzle=createPuzzle(solution,81,randomiseNumberOrder())
+		end=time.time()
+		timeTaken=end-start
+		totalTime+=timeTaken
+		f=open("puzzles/puzzle"+str(i*threadNo)+".txt","w")
+		for j in range(0,len(puzzle)):
+			for k in puzzle[j]:
+				f.write(str(int(k))+",")
+			f.write("\n")
+		f.close()
+
+
 boxIndex=[[0,2],[3,5],[6,8]]
 max=50
-totalTime=0
-for i in range(0,max):
-	sudokuGrid=numpy.zeros([9,9])
-	solution=createSolution()[1]
-	
-	print(solution)
 
-	start=time.time()
-	puzzle=createPuzzle(solution,81,randomiseNumberOrder())
-	end=time.time()
-	timeTaken=end-start
-	totalTime+=timeTaken
-	f=open("puzzles/puzzle"+str(i)+".txt","w")
-	for j in range(0,len(puzzle)):
-		for k in puzzle[j]:
-			f.write(str(int(k))+",")
-		f.write("\n")
-	f.close()
+pool_size = 4
 
-print(totalTime/max)
+pool = Pool(pool_size)
+
+for i in range(0,pool_size):
+	pool.apply_async(createAndSavePuzzles, (max,i))
+
+pool.close()
