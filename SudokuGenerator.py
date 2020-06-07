@@ -69,13 +69,14 @@ def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,disallowedValue,cellW
 	for i in range(0,9):
 		count=sum(mentalMarkGrid[i])
 		if count==8:
-			cellsFilledFlag=True
+			
 			for j in range(0,9):
 				if mentalMarkGrid[i][j]==0:
 					index=j
 					break
-			if not(digit==disallowedValue and cellWhereValIsDisallowed==(i*9+j)):
+			if not(digit==disallowedValue and cellWhereValIsDisallowed==(j*9+i)):
 				sudokuGridCopy[i][index]=digit
+				cellsFilledFlag=True
 	
 	#columns
 	for i in range(0,9):
@@ -84,13 +85,13 @@ def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,disallowedValue,cellW
 			if mentalMarkGrid[j][i]==1:
 				count+=1
 		if count==8:
-			cellsFilledFlag=True
 			for j in range(0,9):
 				if mentalMarkGrid[j][i]==0:
 					index=j
 					break
 			if not(digit==disallowedValue and cellWhereValIsDisallowed==(i*9+j)):
 				sudokuGridCopy[index][i]=digit
+				cellsFilledFlag=True
 
 	#boxes TODO
 	return cellsFilledFlag
@@ -277,22 +278,27 @@ def createAndSavePuzzles(numberOfPuzzles,threadNo):
 		end=time.time()
 		timeTaken=end-start
 		totalTime+=timeTaken
+		
 		f=open("puzzles/puzzle"+str(i*threadNo)+".txt","w")
 		for j in range(0,len(puzzle)):
 			for k in puzzle[j]:
 				f.write(str(int(k))+",")
 			f.write("\n")
 		f.close()
+		print(sequentialBacktrackingMethod(puzzle,0,randomiseNumberOrder(),-1,-1)[0])
+	print(totalTime/numberOfPuzzles)
 
 
 boxIndex=[[0,2],[3,5],[6,8]]
 max=50
 
-pool_size = 4
+createAndSavePuzzles(10,1);
 
-pool = Pool(pool_size)
+#pool_size =1
 
-for i in range(0,pool_size):
-	pool.apply_async(createAndSavePuzzles, (max,i))
+#pool = Pool(pool_size)
 
-pool.close()
+#for i in range(0,pool_size):
+#	pool.apply_async(createAndSavePuzzles, (max,i))
+
+#pool.close()
