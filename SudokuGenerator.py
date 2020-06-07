@@ -251,8 +251,9 @@ def createPuzzle(sudukoGrid,sumOfFilledSquares,numberOrder):
 
 boxIndex=[[0,2],[3,5],[6,8]]
 
-sudokuGrid=numpy.zeros([9,9])
+
 for i in range(0,100):
+	sudokuGrid=numpy.zeros([9,9])
 	solution=createSolution()[1]
 
 	print(solution)
