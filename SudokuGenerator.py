@@ -129,18 +129,63 @@ def markRowColumnSubgrid(xPos,yPos,mentalMarkGrid):
 		for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
 			mentalMarkGrid[i][j]=1
 
-
-
-#def getSubgrid(xPos,yPos,subgridX,subgridY):
-	
-
 def createSolution():
 	sudokuGrid=numpy.zeros([9,9])
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
-def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed):
-	#traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
-	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,disallowedValue,cellWhereValIsDisallowed)
+
+def candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed,prevModified,recursionDepth,mentalMarkGrid):
+
+	flag=True
+	for i in sudokuGrid:
+		for j in i:
+			if j==0:
+				flag=False
+	if flag:
+		return [True,sudokuGrid]
+
+	if recursionDepth==0:
+		for i in range (0,9):
+			fillMentalMarkGrid(sudokuGrid,mentalMarkGrid[i],i+1)
+			#the disallowed value and position
+			#print(cellWhereValIsDisallowed%9)
+			#print(floor(cellWhereValIsDisallowed/9))
+
+			mentalMarkGrid[disallowedValue-1][floor(cellWhereValIsDisallowed%9)][floor(cellWhereValIsDisallowed/9)]=1
+	else:
+		markRowColumnSubgrid(floor(prevModified%9),floor(prevModified/9),mentalMarkGrid[int(sudokuGrid[floor(prevModified%9)][floor(prevModified/9)]-1)])
+
+	selection=[0,0]
+	minCandidates=9
+	listOfCandidates=[]
+	for i in range(0,9):
+		for j in range(0,9):
+			candidateSum=0
+			for k in range(0,9):
+				if mentalMarkGrid[k][i][j]==0:
+					candidateSum+=1
+			if candidateSum>0:
+				listOfCandidates.append([candidateSum,[i,j]])
+	
+	for candidate in listOfCandidates:
+		for i in range(1,10):
+			if mentalMarkGrid[i-1][candidate[1][0]][candidate[1][1]]==0:
+				sudokuGrid[candidate[1][0]][candidate[1][1]]=i
+				soln=candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed,candidate[1][1]*9+candidate[1][0],recursionDepth+1,mentalMarkGrid)
+				if soln[0]:
+					return soln
+				else:
+					continue
+			else:
+				continue
+
+	#if we can not fill the cell with any number, we return false in order to indicate we must change the previous cell
+	return [False,sudokuGrid]
+
+def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed,traditionalSearchThreshold):
+	#if traditionalSearchThreshold<=40:
+	#	traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
+	return candidateBacktrackingMethod(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed,-1,0,numpy.zeros([9,9,9]))
 
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
 	xPos=recursionDepth%9
@@ -223,7 +268,7 @@ def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 	print("current filled spaces="+str(sumOfFilledSquares))
 
-	if sumOfFilledSquares<30:
+	if sumOfFilledSquares<20:
 		return sudokuGrid
 
 
@@ -246,13 +291,15 @@ def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 	for currentGridSpace in gridSpaceOrder:
 		
+		print("trying "+str(currentGridSpace))
+		print("trying "+str(currentGridSpace))
 		currentGridValue=int(sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)])
 
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
 
 		sudokuGridCopy[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
-		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace)[0]
+		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace,sumOfFilledSquares)[0]
 
 		if notUnique:
 
@@ -285,16 +332,18 @@ def createAndSavePuzzles(numberOfPuzzles,threadNo):
 				f.write(str(int(k))+",")
 			f.write("\n")
 		f.close()
-		print(sequentialBacktrackingMethod(puzzle,0,randomiseNumberOrder(),-1,-1)[0])
+
+		#verify the puzzle has a solution
+		#print(sequentialBacktrackingMethod(puzzle,0,randomiseNumberOrder(),-1,-1)[0])
 	print(totalTime/numberOfPuzzles)
 
 
 boxIndex=[[0,2],[3,5],[6,8]]
-max=50
+max=100
+#random.seed(1)
+createAndSavePuzzles(1,1)
 
-createAndSavePuzzles(10,1);
-
-#pool_size =1
+#pool_size =5
 
 #pool = Pool(pool_size)
 
