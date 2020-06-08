@@ -18,17 +18,25 @@ void print2DVector(std::vector<std::vector<int>> Vec2d)
 
 struct coord
 {
-	coord(int xPos,int yPos) : xPos(xPos), yPos(yPos) {}
+	coord(int xPos, int yPos) : xPos(xPos), yPos(yPos) {}
 	int xPos;
 	int yPos;
 };
 
 struct gridWithSolveableBool
 {
-	gridWithSolveableBool(bool solvable, std::vector < std::vector<int>> grid) : solvable(solvable), grid(grid){}
+	gridWithSolveableBool(bool solvable, std::vector < std::vector<int>> grid) : solvable(solvable), grid(grid) {}
 
 	bool solvable;
 	std::vector < std::vector<int>> grid;
+};
+
+struct gridWithUniqueness
+{
+	gridWithUniqueness(std::vector < std::vector<int>> grid, int uniqueness) : grid(grid), uniqueness(uniqueness) {}
+
+	std::vector < std::vector<int>> grid;
+	int uniqueness;
 };
 
 coord getSubgrid(int xPos, int yPos)
@@ -84,7 +92,7 @@ gridWithSolveableBool sequentialBacktrackingMethod(std::vector<std::vector<int>>
 	//for each digit in a random order according to numberOrderGrid
 	for (int i = 0; i < 9; i++)
 	{
-		
+
 		int currentTestNumber = numberOrderGrid[xPos][yPos][i];
 
 		std::vector<std::vector<int>> subgridIndex = { {0, 2},{3, 5},{6, 8} };
@@ -150,27 +158,27 @@ gridWithSolveableBool sequentialBacktrackingMethod(std::vector<std::vector<int>>
 std::vector<std::vector<std::vector<int>>> randomiseNumberOrder()
 {
 
-	std::vector<std::vector<std::vector<int>>> numberOrderGrid(9,std::vector<std::vector<int>>(9,std::vector<int>(9,0)));
-		for (int i = 0; i < 9; i++)
+	std::vector<std::vector<std::vector<int>>> numberOrderGrid(9, std::vector<std::vector<int>>(9, std::vector<int>(9, 0)));
+	for (int i = 0; i < 9; i++)
+	{
+		for (int j = 0; j < 9; j++)
 		{
-			for (int j = 0; j < 9; j++)
+			std::vector<int> numbersToSort = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+			for (int k = 0; k < 9; k++)
 			{
-				std::vector<int> numbersToSort = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-				for (int k = 0; k < 9; k++)
-				{
-					std::random_device rd;
-					std::mt19937 gen(rd());
-					std::uniform_int_distribution<> distr(0, numbersToSort.size()-1);
+				std::random_device rd;
+				std::mt19937 gen(rd());
+				std::uniform_int_distribution<> distr(0, numbersToSort.size() - 1);
 
 
-					int index = distr(gen);
-					numberOrderGrid[i][j][k] = numbersToSort[index];
-					numbersToSort.erase(numbersToSort.begin()+index);
-				}
-
+				int index = distr(gen);
+				numberOrderGrid[i][j][k] = numbersToSort[index];
+				numbersToSort.erase(numbersToSort.begin() + index);
 			}
+
 		}
-		return numberOrderGrid;
+	}
+	return numberOrderGrid;
 
 }
 
@@ -208,7 +216,7 @@ void fillMentalMarkGrid(std::vector<std::vector<int>>&sudokuGrid, std::vector<st
 			}
 			//we also rule out all filled cells
 			if (sudokuGrid[xPos][yPos] != 0)
-			{		
+			{
 				mentalMarkGrid[xPos][yPos] = 1;
 			}
 		}
@@ -217,12 +225,155 @@ void fillMentalMarkGrid(std::vector<std::vector<int>>&sudokuGrid, std::vector<st
 
 std::vector<std::vector<int>> createSolution()
 {
-	std::vector<std::vector<int>> sudokuGrid(9, std::vector<int>(9,0));
+	std::vector<std::vector<int>> sudokuGrid(9, std::vector<int>(9, 0));
 	std::vector<std::vector<std::vector<int>>> randomNumberOrder = randomiseNumberOrder();
 	return sequentialBacktrackingMethod(sudokuGrid, 0, randomNumberOrder).grid;
 }
 
+gridWithUniqueness candidateBacktrackingMethod(std::vector<std::vector<int>> sudokuGrid, std::vector<std::vector<std::vector<int>>>& numberOrderGrid,
+	int prevModified, int recursionDepth, std::vector<std::vector<std::vector<int>>> mentalMarkGrid, int solutions)
+{
+	bool flag = true;
+	for (std::vector<int> i : sudokuGrid)
+	{
+		for (int j : i)
+		{
+			if (j == 0)
+			{
+				flag = false;
+			}
+		}
+	}
 
+	if (flag)
+	{
+		return gridWithUniqueness(sudokuGrid, solutions + 1);
+	}
+
+	if (recursionDepth == 0)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			fillMentalMarkGrid(sudokuGrid, mentalMarkGrid[i], i + 1);
+		}
+	}
+	else
+	{
+		ruleOutRowColumnSubgrid(floor(prevModified % 9), floor(prevModified / 9), mentalMarkGrid[sudokuGrid[floor(prevModified % 9)][floor(prevModified / 9)] - 1]);
+	}
+
+	std::vector<coord> listOfCandidates;
+	for (int i = 0; i < 9; i++)
+	{
+		for (int j = 0; j < 9; j++)
+		{
+			int candidateSum = 0;
+			for (int k = 0; k < 0; k++)
+			{
+				if (mentalMarkGrid[k][i][j] == 0)
+					candidateSum += 1;
+			}
+			if (candidateSum > 0)
+			{
+				listOfCandidates.push_back(coord(i, j));
+			}
+		}
+	}
+
+	for (coord candidate : listOfCandidates)
+	{
+		for (int i = 1; i < 10; i++)
+		{
+			if (mentalMarkGrid[i - 1][candidate.xPos][candidate.yPos] == 0)
+			{
+				std::vector<std::vector<int>> sudokuGridCopy = sudokuGrid;
+				sudokuGridCopy[candidate.xPos][candidate.yPos] = i;
+				int solutionAmount = candidateBacktrackingMethod(sudokuGridCopy, numberOrderGrid,
+					candidate.yPos * 9 + candidate.xPos, recursionDepth + 1, mentalMarkGrid, solutions).uniqueness;
+				if (solutionAmount > 1)
+				{
+					return gridWithUniqueness(sudokuGrid, solutions);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+
+	return gridWithUniqueness(sudokuGrid, solutions);
+
+}
+
+gridWithUniqueness searchForSolution(std::vector<std::vector<int>> sudokuGrid, std::vector<std::vector<std::vector<int>>>numberOrder)
+{
+	std::vector<std::vector<std::vector<int>>> mentalMarkGrid(9, std::vector<std::vector<int>>(9, std::vector<int>(9, 0)));
+	int solutions = 0;
+	return candidateBacktrackingMethod(sudokuGrid, numberOrder, -1, 0, mentalMarkGrid, solutions);
+}
+
+std::vector<std::vector<int>> createPuzzle(std::vector<std::vector<int>> sudokuGrid, int sumOfFilledSquares, std::vector<std::vector<std::vector<int>>> numberOrder, int threshold)
+{
+	if (sumOfFilledSquares < threshold)
+	{
+		return sudokuGrid;
+	}
+
+	std::vector<int> gridSpaces(81);
+	for (int i = 0; i < 81; i++)
+	{
+		gridSpaces[i] = i;
+	}
+
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	
+
+	std::vector<int> gridSpaceOrder;
+
+	while (gridSpaces.size() > 0)
+	{
+		std::uniform_int_distribution<> distr(0, gridSpaces.size()-1);
+
+		int index = distr(gen);
+		if (sudokuGrid[index % 9][floor(index / 9)] != 0)
+		{
+			gridSpaceOrder.push_back(gridSpaces[index]);
+		}
+		gridSpaces.erase(gridSpaces.begin() + index);
+	}
+
+	//can automatically remove first cell
+	if (sumOfFilledSquares == 81)
+	{
+		sudokuGrid[floor(gridSpaceOrder[0] % 9)][floor(gridSpaceOrder[0] / 9)] = 0;
+		return createPuzzle(sudokuGrid, sumOfFilledSquares - 1, numberOrder, threshold);
+	}
+
+	for (int currentGridSpace : gridSpaceOrder)
+	{
+		int currentGridValue = sudokuGrid[floor(currentGridSpace % 9)][floor(currentGridSpace / 9)];
+		std::vector<std::vector<int>> sudokuGridCopy = sudokuGrid;
+		sudokuGridCopy[floor(currentGridSpace % 9)][floor(currentGridSpace / 9)] = 0;
+		gridWithUniqueness uniqueness = searchForSolution(sudokuGridCopy, numberOrder);
+
+		if (uniqueness.uniqueness > 1)
+		{
+			continue;
+		}
+		sudokuGrid[floor(currentGridSpace % 9)][floor(currentGridSpace / 9)] = 0;
+		return createPuzzle(sudokuGrid, sumOfFilledSquares - 1, numberOrder, threshold);
+
+	}
+	return sudokuGrid;
+
+}
 
 int main()
 {
@@ -235,5 +386,15 @@ int main()
 	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
 	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
 	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << std::endl;
+
+	std::vector<std::vector<std::vector<int>>> randomNumberOrder = randomiseNumberOrder();
+	std::vector<std::vector<int>> puzzle = createPuzzle(solution, 81, randomNumberOrder, 70);
+	print2DVector(puzzle);
+
+	randomNumberOrder = randomiseNumberOrder();
+	std::vector<std::vector<std::vector<int>>> mentalMarkGrid(9, std::vector<std::vector<int>>(9, std::vector<int>(9, 0)));
+
+	std::cout << candidateBacktrackingMethod(puzzle, randomNumberOrder, -1, 0, mentalMarkGrid, 0).uniqueness;
+
 	return 0;
 }
