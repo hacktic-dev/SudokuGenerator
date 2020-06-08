@@ -94,6 +94,26 @@ def fillLoneEmptyCells(sudokuGridCopy,mentalMarkGrid,digit,disallowedValue,cellW
 				cellsFilledFlag=True
 
 	#boxes TODO
+	subgridIndex=[[0,2],[3,5],[6,8]]
+
+	for subgridX in range(0,3):
+		for subgridY in range(0,3):
+			count=0
+			for i in range(subgridIndex[subgridX][0],subgridIndex[subgridX][1]+1):
+				for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
+					if mentalMarkGrid[i][j]==1:
+						count+=1
+			if count==8:
+				for i in range(subgridIndex[subgridX][0],subgridIndex[subgridX][1]+1):
+					for j in range(subgridIndex[subgridY][0],subgridIndex[subgridY][1]+1):
+						if mentalMarkGrid[i][j]==0:
+							indexi=i
+							indexj=j
+							break
+				if not(digit==disallowedValue and cellWhereValIsDisallowed==(indexj*9+indexi)):
+					sudokuGridCopy[indexi][indexj]=digit
+					cellsFilledFlag=True
+	
 	return cellsFilledFlag
 
 #mark the row column and subgrid of (xPos,yPos) in the mentalMarkGrid
@@ -138,8 +158,9 @@ def createSolution():
 	sudokuGrid=numpy.zeros([9,9])
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
-def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed):
-	#traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
+def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed,traditionalSearchThreshold):
+	if traditionalSearchThreshold<=40:
+		traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
 	return sequentialBacktrackingMethod(sudokuGridCopy,0,numberOrder,disallowedValue,cellWhereValIsDisallowed)
 
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
@@ -252,7 +273,7 @@ def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 		sudokuGridCopy[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
-		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace)[0]
+		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace,sumOfFilledSquares)[0]
 
 		if notUnique:
 
@@ -275,6 +296,10 @@ def createAndSavePuzzles(numberOfPuzzles,threadNo):
 
 		start=time.time()
 		puzzle=createPuzzle(solution,81,randomiseNumberOrder())
+
+		#for i in range (0,5):
+		#	print(searchForSolution(copy.deepcopy(solution),randomiseNumberOrder(),-1,-1,81)[1])
+
 		end=time.time()
 		timeTaken=end-start
 		totalTime+=timeTaken
@@ -285,14 +310,14 @@ def createAndSavePuzzles(numberOfPuzzles,threadNo):
 				f.write(str(int(k))+",")
 			f.write("\n")
 		f.close()
-		print(sequentialBacktrackingMethod(puzzle,0,randomiseNumberOrder(),-1,-1)[0])
+		
 	print(totalTime/numberOfPuzzles)
 
 
 boxIndex=[[0,2],[3,5],[6,8]]
 max=50
 
-createAndSavePuzzles(10,1);
+createAndSavePuzzles(5,1);
 
 #pool_size =1
 
