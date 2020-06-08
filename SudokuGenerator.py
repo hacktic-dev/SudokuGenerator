@@ -134,7 +134,7 @@ def createSolution():
 	return sequentialBacktrackingMethod(sudokuGrid,0,randomiseNumberOrder(),-1,-1)
 
 
-def candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed,prevModified,recursionDepth,mentalMarkGrid):
+def candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,prevModified,recursionDepth,mentalMarkGrid,solutions):
 
 	flag=True
 	for i in sudokuGrid:
@@ -142,16 +142,11 @@ def candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellW
 			if j==0:
 				flag=False
 	if flag:
-		return [True,sudokuGrid]
+		return [sudokuGrid,solutions+1]
 
 	if recursionDepth==0:
 		for i in range (0,9):
 			fillMentalMarkGrid(sudokuGrid,mentalMarkGrid[i],i+1)
-			#the disallowed value and position
-			#print(cellWhereValIsDisallowed%9)
-			#print(floor(cellWhereValIsDisallowed/9))
-
-			mentalMarkGrid[disallowedValue-1][floor(cellWhereValIsDisallowed%9)][floor(cellWhereValIsDisallowed/9)]=1
 	else:
 		markRowColumnSubgrid(floor(prevModified%9),floor(prevModified/9),mentalMarkGrid[int(sudokuGrid[floor(prevModified%9)][floor(prevModified/9)]-1)])
 
@@ -171,21 +166,20 @@ def candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellW
 		for i in range(1,10):
 			if mentalMarkGrid[i-1][candidate[1][0]][candidate[1][1]]==0:
 				sudokuGrid[candidate[1][0]][candidate[1][1]]=i
-				soln=candidateBacktrackingMethod(sudokuGrid,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed,candidate[1][1]*9+candidate[1][0],recursionDepth+1,mentalMarkGrid)
-				if soln[0]:
-					return soln
+				solutions=candidateBacktrackingMethod(copy.deepcopy(sudokuGrid),numberOrderGrid,candidate[1][1]*9+candidate[1][0],recursionDepth+1,copy.deepcopy(mentalMarkGrid),solutions)[1]
+				if solutions==2:
+					return [sudokuGrid,solutions]
 				else:
+					sudokuGrid[candidate[1][0]][candidate[1][1]]=0
 					continue
 			else:
 				continue
-
+		
 	#if we can not fill the cell with any number, we return false in order to indicate we must change the previous cell
-	return [False,sudokuGrid]
+	return [sudokuGrid,solutions]
 
-def searchForSolution(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed,traditionalSearchThreshold):
-	#if traditionalSearchThreshold<=40:
-	#	traditionalSearch(sudokuGridCopy,0,disallowedValue,cellWhereValIsDisallowed)
-	return candidateBacktrackingMethod(sudokuGridCopy,numberOrder,disallowedValue,cellWhereValIsDisallowed,-1,0,numpy.zeros([9,9,9]))
+def searchForSolution(sudokuGridCopy,numberOrder):
+	return candidateBacktrackingMethod(sudokuGridCopy,numberOrder,-1,0,numpy.zeros([9,9,9]),0)
 
 def sequentialBacktrackingMethod(sudokuGrid,recursionDepth,numberOrderGrid,disallowedValue,cellWhereValIsDisallowed):
 	xPos=recursionDepth%9
@@ -268,7 +262,7 @@ def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 	print("current filled spaces="+str(sumOfFilledSquares))
 
-	if sumOfFilledSquares<20:
+	if sumOfFilledSquares<15:
 		return sudokuGrid
 
 
@@ -291,17 +285,16 @@ def createPuzzle(sudokuGrid,sumOfFilledSquares,numberOrder):
 
 	for currentGridSpace in gridSpaceOrder:
 		
-		print("trying "+str(currentGridSpace))
-		print("trying "+str(currentGridSpace))
+		#print("trying "+str(currentGridSpace))
 		currentGridValue=int(sudokuGrid[floor(currentGridSpace%9)][floor(currentGridSpace/9)])
 
 		sudokuGridCopy=copy.deepcopy(sudokuGrid)
 
 		sudokuGridCopy[floor(currentGridSpace%9)][floor(currentGridSpace/9)]=0
 
-		notUnique=searchForSolution(sudokuGridCopy,numberOrder,currentGridValue,currentGridSpace,sumOfFilledSquares)[0]
+		notUnique=searchForSolution(sudokuGridCopy,numberOrder)
 
-		if notUnique:
+		if notUnique[1]>1:
 
 			continue
 
