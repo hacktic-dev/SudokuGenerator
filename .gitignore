@@ -125,3 +125,11 @@ dmypy.json
 .pyre/
 
 /puzzles/
+*.tlog
+*.pdb
+*.vcxproj
+*.filters
+*.user
+Debug/Source.obj
+Debug/vc141.idb
+Release/Source.obj
